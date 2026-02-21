@@ -9,6 +9,7 @@ dependencies = [
     "numpy>=1.24",
     "akshare>=1.10",
     "anthropic>=0.30",
+    "openai>=1.0",
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
     "loguru>=0.7",
@@ -16,6 +17,7 @@ dependencies = [
     "pyyaml>=6.0",
     "python-dotenv>=1.0",
     "scikit-optimize>=0.9",
+    "prompt-toolkit>=3.0",
 ]
 
 [project.optional-dependencies]
