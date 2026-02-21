@@ -56,10 +56,18 @@ def version() -> None:
     click.echo("QuantSys v0.1.0")
 
 
+@cli.command()
+def chat() -> None:
+    """Start interactive chat with Agent."""
+    from quantsys.cli.chat_mode import start_chat
+    start_chat()
+
+
 # Import and register subcommands
-from quantsys.cli import data_commands  # noqa: E402
+from quantsys.cli import backtest_commands, data_commands  # noqa: E402
 
 cli.add_command(data_commands.data)
+cli.add_command(backtest_commands.backtest)
 
 
 def main() -> None:
