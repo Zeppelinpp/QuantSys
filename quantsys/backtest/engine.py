@@ -204,6 +204,7 @@ class BacktestEngine:
         start_str = self.start_date.strftime("%Y-%m-%d %H:%M:%S")
         end_str = self.end_date.strftime("%Y-%m-%d %H:%M:%S")
 
+        # Try minute data first
         sql = f"""
         SELECT symbol, timestamp, open, high, low, close, volume, amount
         FROM market_data
@@ -214,6 +215,19 @@ class BacktestEngine:
         """
 
         rows = self.db.fetchall(sql)
+
+        # Fall back to daily data if no minute data
+        if not rows:
+            logger.info("No minute data found, trying daily data...")
+            sql = f"""
+            SELECT symbol, date as timestamp, open, high, low, close, volume, amount
+            FROM daily_data
+            WHERE symbol IN ({symbols_str})
+              AND date >= '{start_str[:10]}'
+              AND date <= '{end_str[:10]}'
+            ORDER BY date, symbol
+            """
+            rows = self.db.fetchall(sql)
 
         if not rows:
             logger.warning("No data found for backtest period")
