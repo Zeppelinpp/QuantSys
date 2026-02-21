@@ -1,0 +1,60 @@
+[project]
+name = "quantsys"
+version = "0.1.0"
+description = "A-share quantitative trading system with LLM-powered strategy optimization"
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.0",
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "akshare>=1.10",
+    "anthropic>=0.30",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "loguru>=0.7",
+    "rich>=13.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "scikit-optimize>=0.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.0",
+    "pytest-asyncio>=0.21",
+    "black>=24.0",
+    "ruff>=0.3.0",
+    "mypy>=1.8",
+]
+
+[project.scripts]
+quant = "quant_cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["quantsys*"]
+
+[tool.setuptools]
+py-modules = ["quant_cli"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
