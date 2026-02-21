@@ -18,11 +18,12 @@ class Database:
         """Singleton pattern per database path."""
         path_str = str(Path(db_path).resolve())
         with cls._lock:
-            if path_str not in cls._instances:
+            instance = cls._instances.get(path_str)
+            if instance is None:
                 instance = super().__new__(cls)
                 instance._initialized = False
                 cls._instances[path_str] = instance
-            return cls._instances[path_str]
+            return instance
 
     def __init__(self, db_path: Union[str, Path]) -> None:
         """Initialize database connection."""

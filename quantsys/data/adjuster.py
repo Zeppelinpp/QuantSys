@@ -78,7 +78,9 @@ class Adjuster:
         )
 
         # Calculate factor: adj_factor = close_adj / close_unadj
-        df_merged["adj_factor"] = df_merged["close_adj"] / df_merged["close_unadj"]
+        # Handle potential division by zero
+        df_merged["adj_factor"] = df_merged["close_adj"] / df_merged["close_unadj"].replace(0, pd.NA)
+        df_merged = df_merged.dropna(subset=["adj_factor"])
 
         # Standardize
         df_merged["symbol"] = symbol
@@ -95,27 +97,28 @@ class Adjuster:
             logger.warning(f"No adjustment factors for {symbol}")
             return
 
-        # Update daily_data table
-        for _, row in df.iterrows():
-            self.db.execute(
-                """
-                UPDATE daily_data
-                SET adj_factor = ?
-                WHERE symbol = ? AND date = ?
-                """,
-                (row["adj_factor"], symbol, row["date"].strftime("%Y-%m-%d")),
-            )
+        with self.db.transaction() as conn:
+            # Update daily_data table
+            for _, row in df.iterrows():
+                conn.execute(
+                    """
+                    UPDATE daily_data
+                    SET adj_factor = ?
+                    WHERE symbol = ? AND date = ?
+                    """,
+                    (row["adj_factor"], symbol, row["date"].strftime("%Y-%m-%d")),
+                )
 
-        # Update market_data table (apply daily factor to all minute bars)
-        for _, row in df.iterrows():
-            self.db.execute(
-                """
-                UPDATE market_data
-                SET adj_factor = ?
-                WHERE symbol = ? AND DATE(timestamp) = ?
-                """,
-                (row["adj_factor"], symbol, row["date"].strftime("%Y-%m-%d")),
-            )
+            # Update market_data table (apply daily factor to all minute bars)
+            for _, row in df.iterrows():
+                conn.execute(
+                    """
+                    UPDATE market_data
+                    SET adj_factor = ?
+                    WHERE symbol = ? AND DATE(timestamp) = ?
+                    """,
+                    (row["adj_factor"], symbol, row["date"].strftime("%Y-%m-%d")),
+                )
 
         logger.info(f"Updated adjustment factors for {symbol}")
 

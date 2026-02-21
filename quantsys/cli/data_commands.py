@@ -69,14 +69,14 @@ def status() -> None:
     db = Database(settings.db_path)
 
     # Count records in each table
-    tables = ["market_data", "daily_data", "factors"]
+    VALID_TABLES = {"market_data", "daily_data", "factors"}
 
     click.echo("Data Status:")
     click.echo("-" * 40)
 
-    for table in tables:
+    for table in VALID_TABLES:
         try:
-            result = db.fetchone(f"SELECT COUNT(*) as count FROM {table}")
+            result = db.fetchone("SELECT COUNT(*) as count FROM " + table)
             count = result["count"] if result else 0
             click.echo(f"  {table}: {count:,} records")
         except Exception:

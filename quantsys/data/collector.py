@@ -233,19 +233,24 @@ class DataCollector:
         if df.empty:
             return
 
-        records = [
-            (
+        records = []
+        for _, row in df.iterrows():
+            volume = row["volume"]
+            if pd.isna(volume):
+                volume = 0
+            else:
+                volume = int(min(volume, 2_147_483_647))  # Cap at SQLite max integer
+
+            records.append((
                 row["symbol"],
                 row["timestamp"].strftime("%Y-%m-%d %H:%M:%S"),
                 row["open"],
                 row["high"],
                 row["low"],
                 row["close"],
-                int(row["volume"]),
+                volume,
                 row["amount"],
-            )
-            for _, row in df.iterrows()
-        ]
+            ))
 
         self.db.executemany(
             """
@@ -263,19 +268,24 @@ class DataCollector:
         if df.empty:
             return
 
-        records = [
-            (
+        records = []
+        for _, row in df.iterrows():
+            volume = row["volume"]
+            if pd.isna(volume):
+                volume = 0
+            else:
+                volume = int(min(volume, 2_147_483_647))  # Cap at SQLite max integer
+
+            records.append((
                 row["symbol"],
                 row["date"].strftime("%Y-%m-%d"),
                 row["open"],
                 row["high"],
                 row["low"],
                 row["close"],
-                int(row["volume"]),
+                volume,
                 row["amount"],
-            )
-            for _, row in df.iterrows()
-        ]
+            ))
 
         self.db.executemany(
             """
