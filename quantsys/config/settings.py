@@ -26,8 +26,16 @@ class Settings(BaseSettings):
     DATABASE_PATH: str = Field(default="data/quantsys.db")
 
     # LLM API
+    LLM_PROVIDER: str = Field(default="anthropic")  # "anthropic" or "openai"
+
+    # Anthropic settings
     ANTHROPIC_API_KEY: Optional[str] = Field(default=None)
     ANTHROPIC_MODEL: str = Field(default="claude-3-5-sonnet-20241022")
+
+    # OpenAI-compatible settings
+    OPENAI_API_KEY: Optional[str] = Field(default=None)
+    OPENAI_BASE_URL: Optional[str] = Field(default=None)  # For custom providers
+    OPENAI_MODEL: str = Field(default="gpt-4")
 
     # Logging
     LOG_LEVEL: str = Field(default="INFO")

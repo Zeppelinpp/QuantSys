@@ -64,10 +64,11 @@ def chat() -> None:
 
 
 # Import and register subcommands
-from quantsys.cli import backtest_commands, data_commands  # noqa: E402
+from quantsys.cli import backtest_commands, data_commands, paper_commands  # noqa: E402
 
 cli.add_command(data_commands.data)
 cli.add_command(backtest_commands.backtest)
+cli.add_command(paper_commands.paper)
 
 
 def main() -> None:
