@@ -22,6 +22,13 @@ commands:
 /generate "双均线金叉策略" --name dual_ma --type momentum
 ```
 
+### 因子策略生成
+
+```
+/generate "用WQ002和WQ017的等权组合做多因子策略" --factors WQ002 WQ017
+/generate "当WQ002>0.7买入，<0.3卖出" --factors WQ002
+```
+
 ### 输出
 
 - 生成的策略代码

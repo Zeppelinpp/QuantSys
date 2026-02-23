@@ -4,7 +4,7 @@ import ast
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 from loguru import logger
 
@@ -59,6 +59,7 @@ class StrategyGenerator:
         description: str,
         strategy_type: str = "momentum",
         name: Optional[str] = None,
+        factor_ids: Optional[List[str]] = None,
     ) -> Path:
         """Generate strategy from description.
 
@@ -66,6 +67,7 @@ class StrategyGenerator:
             description: Strategy logic description
             strategy_type: Strategy type (momentum, mean_reversion, breakout)
             name: Strategy name (auto-generated if not provided)
+            factor_ids: Optional list of factor IDs for factor-based strategies
 
         Returns:
             Path to generated strategy file
@@ -81,7 +83,7 @@ class StrategyGenerator:
         class_name = self._to_class_name(name)
 
         # Generate code using LLM
-        code = self._generate_with_llm(description, class_name, strategy_type)
+        code = self._generate_with_llm(description, class_name, strategy_type, factor_ids)
 
         # Validate syntax
         if not self._validate_syntax(code):
@@ -102,6 +104,7 @@ class StrategyGenerator:
         description: str,
         class_name: str,
         strategy_type: str,
+        factor_ids: Optional[List[str]] = None,
     ) -> str:
         """Generate code using LLM."""
         prompt = f"""Generate a Python trading strategy based on the following description.
@@ -137,6 +140,24 @@ class {class_name}(BaseStrategy):
 ```
 
 Generate only the Python code, no explanations."""
+
+        if factor_ids:
+            from quantsys.factor.registry import FactorRegistry
+
+            registry = FactorRegistry()
+            registry.discover()
+            factor_context = registry.get_detail(factor_ids)
+
+            prompt += f"""
+
+IMPORTANT: This strategy uses pre-computed factors from the QuantSys factor library.
+The strategy class MUST declare: required_factors = {factor_ids}
+In on_bar(), use self._get_factor(bar, "FACTOR_ID") to get the pre-computed factor value.
+_get_factor returns None if data is unavailable — always check for None.
+
+Factor definitions:
+{factor_context}
+"""
 
         messages = [{"role": "user", "content": prompt}]
 
