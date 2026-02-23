@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Type
 
+import numpy as np
 import pandas as pd
 from loguru import logger
 
@@ -54,6 +55,7 @@ class BacktestEngine:
         initial_cash: float = 1_000_000.0,
         database: Optional[Database] = None,
         execution_config: Optional[ExecutionConfig] = None,
+        benchmark_symbol: Optional[str] = None,
     ) -> None:
         """Initialize backtest engine.
 
@@ -65,12 +67,14 @@ class BacktestEngine:
             initial_cash: Initial cash
             database: Database instance (optional)
             execution_config: Execution configuration (optional)
+            benchmark_symbol: Index symbol for benchmark comparison (e.g. "000300")
         """
         self.start_date = start_date
         self.end_date = end_date
         self.symbols = symbols
         self.strategy = strategy
         self.initial_cash = initial_cash
+        self.benchmark_symbol = benchmark_symbol
 
         self.db = database
         self.portfolio = Portfolio(initial_cash=initial_cash)
@@ -100,6 +104,22 @@ class BacktestEngine:
         data = self._load_data()
         if data.empty:
             raise ValueError("No data loaded for backtest")
+
+        # Pre-compute factor data if the strategy declares required_factors
+        if getattr(self.strategy, "required_factors", None):
+            from quantsys.factor.engine import FactorEngine
+            from quantsys.factor.registry import FactorRegistry
+
+            registry = FactorRegistry()
+            registry.discover()
+            factor_engine = FactorEngine(registry)
+            self.strategy.factor_data = factor_engine.compute_batch(
+                self.strategy.required_factors, data
+            )
+            logger.info(
+                f"Pre-computed {len(self.strategy.required_factors)} factors: "
+                f"{self.strategy.required_factors}"
+            )
 
         # Initialize strategy
         self.strategy.on_start({
@@ -140,10 +160,16 @@ class BacktestEngine:
             "trades": len(self.fills),
         })
 
+        # Load benchmark data if specified
+        benchmark_returns = None
+        if self.benchmark_symbol:
+            benchmark_returns = self._load_benchmark_returns()
+
         # Calculate metrics
         metrics = calculate_metrics(
             self.portfolio.equity_curve,
             self.fills,
+            benchmark_returns=benchmark_returns,
         )
 
         logger.info(
@@ -253,6 +279,10 @@ class BacktestEngine:
         for symbol, bar_data in self.current_bars.items():
             bar_event = BarEvent.from_dict(bar_data)
 
+            # Sync strategy.position with portfolio for this symbol
+            pos = self.portfolio.get_position(symbol)
+            self.strategy.set_position(pos.quantity if pos else 0)
+
             # Get signal from strategy
             signal = self.strategy.on_bar(bar_event)
 
@@ -325,3 +355,27 @@ class BacktestEngine:
         if fill:
             self.fills.append(fill)
             self.portfolio.process_fill(fill)
+
+    def _load_benchmark_returns(self) -> Optional[np.ndarray]:
+        """Load benchmark index returns aligned to backtest period."""
+        if self.db is None:
+            return None
+
+        start_str = self.start_date.strftime("%Y-%m-%d")
+        end_str = self.end_date.strftime("%Y-%m-%d")
+
+        sql = f"""
+        SELECT date, close FROM index_daily_data
+        WHERE symbol = '{self.benchmark_symbol}'
+          AND date >= '{start_str}'
+          AND date <= '{end_str}'
+        ORDER BY date
+        """
+        rows = self.db.fetchall(sql)
+        if len(rows) < 2:
+            logger.warning(f"Insufficient benchmark data for {self.benchmark_symbol}")
+            return None
+
+        prices = np.array([r["close"] for r in rows], dtype=float)
+        returns = np.diff(prices) / prices[:-1]
+        return returns
