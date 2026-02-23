@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import yaml
-from loguru import logger
 
 
 @dataclass
@@ -36,7 +35,6 @@ class SkillRegistry:
         """
         for base_path in paths:
             if not base_path.exists():
-                logger.warning(f"Skill path does not exist: {base_path}")
                 continue
 
             for skill_dir in base_path.iterdir():
@@ -53,7 +51,6 @@ class SkillRegistry:
                         for cmd in skill.commands:
                             self.command_map[cmd] = skill.name
 
-                        logger.info(f"Loaded skill: {skill.name} from {skill_dir}")
                     except Exception as e:
                         logger.error(f"Failed to parse skill {skill_file}: {e}")
 

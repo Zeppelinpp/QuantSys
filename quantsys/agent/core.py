@@ -117,6 +117,11 @@ Be concise and helpful. Use the available tools to accomplish tasks."""
         # In full implementation, this would parse args and execute
         return f"Command: {command}\nSkill: {skill.name}\nDescription: {skill.description}"
 
+    def load_skill(self, skill_name: str) -> None:
+        """Inject a skill's full documentation into the conversation context."""
+        skill_doc = self.skills.load_full_skill(skill_name)
+        self.context.add_message("system", f"Skill loaded: {skill_name}\n\n{skill_doc}")
+
     def get_available_commands(self) -> List[str]:
         """Get list of available commands."""
         return list(self.skills.list_commands().keys())

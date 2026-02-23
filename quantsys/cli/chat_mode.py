@@ -2,11 +2,13 @@
 
 import re
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.completion import Completer, Completion
+from prompt_toolkit.shortcuts import CompleteStyle
+from prompt_toolkit.lexers import Lexer
 from prompt_toolkit.styles import Style
 from rich.console import Console
 from rich.markdown import Markdown
@@ -20,13 +22,39 @@ from quantsys.config import get_settings
 console = Console()
 
 
+class CommandLexer(Lexer):
+    """Highlights recognized slash commands with a dim blue background."""
+
+    _CMD_RE = re.compile(r"^(/\S+)(.*)")
+
+    def __init__(self, commands: list[str]):
+        self.command_names = {cmd.lstrip("/") for cmd in commands}
+
+    def lex_document(self, document):
+        def get_line(lineno):
+            line = document.lines[lineno]
+            if not line.startswith("/"):
+                return [("", line)]
+            m = self._CMD_RE.match(line)
+            if not m:
+                return [("", line)]
+            cmd_token, rest = m.group(1), m.group(2)
+            if cmd_token[1:] in self.command_names:
+                result = [("class:slash-cmd", cmd_token)]
+                if rest:
+                    result.append(("", rest))
+                return result
+            return [("", line)]
+
+        return get_line
+
+
 class SlashCommandCompleter(Completer):
     """Completer for slash commands and @ file references."""
 
     def __init__(self, agent: Agent):
         self.agent = agent
         self.commands = agent.get_available_commands()
-        self.loaded_skill: Optional[str] = None
 
     def get_completions(self, document, complete_event):
         text = document.text
@@ -40,14 +68,16 @@ class SlashCommandCompleter(Completer):
                     prefix = match.group(1)
                     for file_path in self._find_files(prefix):
                         # No style parameter = no background color
-                        yield Completion(str(file_path), start_position=-len(prefix))
+                        yield Completion(str(file_path), start_position=-len(prefix), style="")
                     break
 
-        # Complete slash commands - no background color for toggle
+        # Complete slash commands - match against typed text after the slash
         elif text.startswith("/"):
+            typed = text[1:]  # strip the leading slash
             for cmd in self.commands:
-                if cmd.startswith(word):
-                    yield Completion(cmd, start_position=-len(word))
+                cmd_name = cmd.lstrip("/")
+                if cmd_name.startswith(typed):
+                    yield Completion(cmd_name, start_position=-len(typed), style="")
 
     def _find_files(self, prefix: str) -> List[Path]:
         """Find files matching prefix using ripgrep-like search."""
@@ -76,16 +106,22 @@ class ChatInterface:
         self.settings = get_settings()
         self.agent = Agent(self.settings)
         self.completer = SlashCommandCompleter(self.agent)
+        self.lexer = CommandLexer(self.agent.get_available_commands())
         self.session = PromptSession(
             completer=self.completer,
+            lexer=self.lexer,
             auto_suggest=AutoSuggestFromHistory(),
+            complete_while_typing=True,
+            complete_style=CompleteStyle.MULTI_COLUMN,
             style=Style.from_dict({
                 'prompt': 'ansigreen bold',
+                'slash-cmd': 'bg:#264f78',
+                'completion-menu': 'noinherit',
+                'completion-menu.completion': 'noinherit',
+                'completion-menu.completion.current': 'noinherit reverse',
             })
         )
         self.running = True
-        self.loaded_skill: Optional[str] = None
-        self.loaded_command: Optional[str] = None
 
     def start(self):
         """Start the chat interface."""
@@ -93,7 +129,6 @@ class ChatInterface:
 
         while self.running:
             try:
-                # Build dynamic prompt with light blue background for loaded skill/command
                 prompt_fragments = self._build_prompt()
 
                 user_input = self.session.prompt(
@@ -122,19 +157,8 @@ class ChatInterface:
                 console.print(f"[red]Error: {e}[/red]")
 
     def _build_prompt(self) -> List:
-        """Build prompt with light blue background for loaded skill/command."""
-        fragments = []
-
-        # Show loaded skill/command with light blue background
-        if self.loaded_skill:
-            fragments.append(("bg:ansilightblue ansiblack", f" {self.loaded_skill} "))
-            fragments.append(("", " "))
-        elif self.loaded_command:
-            fragments.append(("bg:ansilightblue ansiblack", f" {self.loaded_command} "))
-            fragments.append(("", " "))
-
-        fragments.append(("ansigreen bold", "quant> "))
-        return fragments
+        """Build plain prompt."""
+        return [("ansigreen bold", "quant> ")]
 
     def _show_welcome(self):
         """Show welcome message."""
@@ -152,16 +176,15 @@ class ChatInterface:
 
     def _process_input(self, user_input: str):
         """Process user input."""
-        # Check for slash commands
         if user_input.startswith("/"):
             self._handle_slash_command(user_input)
             return
+        self._chat(user_input)
 
-        # Handle @ file references
+    def _chat(self, user_input: str):
+        """Send a message to the agent and render the response."""
         if "@" in user_input:
             user_input = self._expand_file_refs(user_input)
-
-        # Regular chat
         with console.status("[dim]Thinking...[/dim]", spinner="dots"):
             try:
                 response = self.agent.chat(user_input)
@@ -187,29 +210,38 @@ class ChatInterface:
             console.clear()
         elif command == "/reset":
             self.agent.reset()
-            self.loaded_skill = None
-            self.loaded_command = None
             console.print("[dim]🔄 Conversation reset[/dim]")
         else:
             # Try to load skill or execute command
             self._load_skill_or_command(command_line)
 
     def _load_skill_or_command(self, command_line: str):
-        """Load a skill or command and show it in prompt with light blue background."""
-        parts = command_line.split()
+        """Load a skill or command, then forward any trailing text as a chat message."""
+        parts = command_line.split(None, 1)  # split into command + rest
         command = parts[0].lower()
+        trailing = parts[1].strip() if len(parts) > 1 else ""
 
         # Check if it's a skill command
         skill = self.agent.skills.get_skill_by_command(command)
         if skill:
-            self.loaded_skill = f"/{skill.name}"
-            self.loaded_command = None
+            try:
+                self.agent.load_skill(skill.name)
+                console.print(f"[green]⏺[/green] Skill([cyan]{skill.name}[/cyan])")
+                console.print(f"  [dim]⎿  Successfully loaded skill[/dim]")
+            except Exception as e:
+                console.print(f"[red]Error loading skill:[/red] {e}")
+                return
+            # Forward any trailing question to the agent
+            if trailing:
+                self._chat(trailing)
             return
 
         # Check if it's a known command
         if command in self.agent.get_available_commands():
-            self.loaded_command = command
-            self.loaded_skill = None
+            console.print(f"[green]⏺[/green] Command([cyan]{command}[/cyan])")
+            console.print(f"  [dim]⎿  Successfully loaded[/dim]")
+            if trailing:
+                self._chat(trailing)
             return
 
         # Unknown command
@@ -246,41 +278,45 @@ class ChatInterface:
   [cyan]/reset[/cyan]     - Reset conversation
   [cyan]/quit[/cyan]      - Exit the chat
 
-[bold]Load Skills/Commands:[/bold]
-  [cyan]/<skill_name>[/cyan]   - Load a skill (shows in light blue prompt)
-  [cyan]/<command>[/cyan]       - Load a command (shows in light blue prompt)
+[bold]Load Skills:[/bold]
+  [cyan]/<skill_name>[/cyan]   - Load a skill into agent context
 
 [bold]File References:[/bold]
-  [cyan]@filename[/cyan]  - Reference a file (autocomplete with Tab)
-  [cyan]@strat<Tab>[/cyan] - Will find strategy files
+  [cyan]@filename[/cyan]  - Inline file content into your message (Tab to autocomplete)
 
 [bold]Examples:[/bold]
   quant> [green]How do I create a momentum strategy?[/green]
-  quant> [cyan]/backtest[/cyan] [green]@strategies/momentum.py --start 2024-01-01[/green]
-  quant> [cyan]/code_generate[/cyan]   [dim]# Loads skill in light blue[/dim]
+  quant> [cyan]/backtest[/cyan]
+  quant> [green]Analyze @strategies/momentum.py[/green]
 
 [bold]Tips:[/bold]
 - Press Tab for autocomplete on commands and files
-- Use @ to quickly reference strategy files
-- Loaded skills/commands show in light blue background in prompt"""
+- @file reads and inlines the file so the agent sees its content
+- /skill loads a skill's documentation into the agent context"""
 
         console.print(Panel(help_text, title="Help", border_style="cyan"))
 
     def _expand_file_refs(self, text: str) -> str:
-        """Expand @ file references in text."""
+        """Expand @ file references, inlining file content into the message."""
         def replace_ref(match):
             ref = match.group(1)
             files = self._find_files(ref)
-            if files:
-                # If we found a unique match, return full path
-                if len(files) == 1:
-                    return str(files[0])
-                # Otherwise show options
+            if not files:
+                return match.group(0)
+            if len(files) > 1:
                 console.print(f"[dim]Multiple matches for @{ref}:[/dim]")
                 for i, f in enumerate(files[:5], 1):
                     console.print(f"  [cyan]{i}.[/cyan] {f}")
                 return match.group(0)
-            return match.group(0)
+            # Single match — inline the file content
+            file_path = files[0]
+            try:
+                content = file_path.read_text(encoding="utf-8")
+                console.print(f"[dim]⎿  Read {file_path} ({len(content)} chars)[/dim]")
+                return f"[File: {file_path}]\n```\n{content}\n```"
+            except Exception as e:
+                console.print(f"[red]Could not read {file_path}:[/red] {e}")
+                return match.group(0)
 
         return re.sub(r"@(\S+)", replace_ref, text)
 

@@ -62,16 +62,21 @@ class Database:
     def execute(
         self, sql: str, params: Optional[tuple] = None
     ) -> sqlite3.Cursor:
-        """Execute SQL query."""
+        """Execute SQL query, committing writes automatically."""
         conn = self._get_connection()
         if params is None:
             params = ()
-        return conn.execute(sql, params)
+        cursor = conn.execute(sql, params)
+        if sql.strip().upper().startswith(("INSERT", "UPDATE", "DELETE", "REPLACE", "CREATE", "DROP")):
+            conn.commit()
+        return cursor
 
     def executemany(self, sql: str, params_list: List[tuple]) -> sqlite3.Cursor:
-        """Execute SQL query with multiple parameter sets."""
+        """Execute SQL query with multiple parameter sets, committing automatically."""
         conn = self._get_connection()
-        return conn.executemany(sql, params_list)
+        cursor = conn.executemany(sql, params_list)
+        conn.commit()
+        return cursor
 
     def fetchall(
         self, sql: str, params: Optional[tuple] = None
@@ -100,6 +105,7 @@ class Database:
         tables = [
             "market_data",
             "daily_data",
+            "index_daily_data",
             "factors",
             "strategies",
             "backtest_results",
@@ -230,6 +236,22 @@ CREATE TABLE IF NOT EXISTS paper_trades (
 );
 
 CREATE INDEX IF NOT EXISTS idx_paper_trades_account ON paper_trades(account_id);
+
+-- 指数日线数据（大盘/行业指数）
+CREATE TABLE IF NOT EXISTS index_daily_data (
+    symbol TEXT NOT NULL,
+    date DATE NOT NULL,
+    open REAL,
+    high REAL,
+    low REAL,
+    close REAL,
+    volume INTEGER,
+    amount REAL,
+    PRIMARY KEY (symbol, date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_index_daily_symbol ON index_daily_data(symbol);
+CREATE INDEX IF NOT EXISTS idx_index_daily_date ON index_daily_data(date);
 """
 
 
