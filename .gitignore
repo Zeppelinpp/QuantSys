@@ -48,3 +48,9 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# DB file
+*.db
+
+# uv
+uv.lock
