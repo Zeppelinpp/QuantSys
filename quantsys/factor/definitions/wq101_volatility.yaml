@@ -1,0 +1,25 @@
+# WorldQuant 101 Alphas — Volatility factors
+factors:
+  - id: WQ028
+    name: "Alpha#028"
+    source: "WorldQuant 101"
+    category: volatility
+    formula: "scale(ts_corr(adv(volume, 20), low, 5) + (high + low) / 2 - close)"
+    description: "Volume-low correlation plus midpoint deviation — volatility regime signal"
+    data_requirements: [high, low, close, volume]
+    lookback_window: 22
+    compute_fn: "quantsys.factor.library.wq101:alpha028"
+    tags: [volume, low, correlation, volatility]
+    notes: "Combines volume-price dynamics with bar positioning"
+
+  - id: WQ054
+    name: "Alpha#054"
+    source: "WorldQuant 101"
+    category: volatility
+    formula: "-1 * (low - close) * signedpower(open, 5) / ((low - high) * signedpower(close, 5) + eps)"
+    description: "Close-low gap scaled by open/close power ratio"
+    data_requirements: [open, high, low, close]
+    lookback_window: 1
+    compute_fn: "quantsys.factor.library.wq101:alpha054"
+    tags: [open, high, low, close, power, volatility]
+    notes: "Non-linear volatility signal sensitive to bar position and OHLC ratios"

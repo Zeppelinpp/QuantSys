@@ -1,0 +1,133 @@
+# WorldQuant 101 Alphas — Reversal factors
+factors:
+  - id: WQ002
+    name: "Alpha#002"
+    source: "WorldQuant 101"
+    category: reversal
+    formula: "-1 * ts_corr(rank(delta(log(volume), 2)), rank((close - open) / open), 6)"
+    description: "Volume change rank correlated with intraday return rank — captures volume-driven reversals"
+    data_requirements: [open, close, volume]
+    lookback_window: 10
+    compute_fn: "quantsys.factor.library.wq101:alpha002"
+    tags: [volume, correlation, reversal]
+    notes: "Negative correlation implies contrarian signal"
+
+  - id: WQ003
+    name: "Alpha#003"
+    source: "WorldQuant 101"
+    category: reversal
+    formula: "-1 * ts_corr(rank(open), rank(volume), 10)"
+    description: "Negative correlation between open price rank and volume rank over 10 days"
+    data_requirements: [open, volume]
+    lookback_window: 12
+    compute_fn: "quantsys.factor.library.wq101:alpha003"
+    tags: [volume, correlation, reversal]
+    notes: "Open-volume decorrelation as reversal indicator"
+
+  - id: WQ004
+    name: "Alpha#004"
+    source: "WorldQuant 101"
+    category: reversal
+    formula: "-1 * ts_rank(rank(low), 9)"
+    description: "Time-series rank of low price rank — captures mean-reversion from lows"
+    data_requirements: [low]
+    lookback_window: 11
+    compute_fn: "quantsys.factor.library.wq101:alpha004"
+    tags: [low, rank, reversal]
+    notes: "Stocks near recent lows tend to bounce back"
+
+  - id: WQ006
+    name: "Alpha#006"
+    source: "WorldQuant 101"
+    category: reversal
+    formula: "-1 * ts_corr(open, volume, 10)"
+    description: "Negative raw correlation between open price and volume"
+    data_requirements: [open, volume]
+    lookback_window: 12
+    compute_fn: "quantsys.factor.library.wq101:alpha006"
+    tags: [volume, correlation, reversal]
+    notes: "High volume at low opens suggests buying pressure"
+
+  - id: WQ014
+    name: "Alpha#014"
+    source: "WorldQuant 101"
+    category: reversal
+    formula: "-1 * rank(delta(returns, 3)) * ts_corr(open, volume, 10)"
+    description: "Return momentum rank interacted with open-volume correlation"
+    data_requirements: [open, close, volume]
+    lookback_window: 14
+    compute_fn: "quantsys.factor.library.wq101:alpha014"
+    tags: [returns, volume, interaction, reversal]
+    notes: "Combines short-term return reversal with volume-price dynamics"
+
+  - id: WQ020
+    name: "Alpha#020"
+    source: "WorldQuant 101"
+    category: reversal
+    formula: "-1 * rank(open - delay(high, 1)) * rank(open - delay(close, 1)) * rank(open - delay(low, 1))"
+    description: "Three-way gap interaction — captures overnight gap reversal"
+    data_requirements: [open, high, low, close]
+    lookback_window: 3
+    compute_fn: "quantsys.factor.library.wq101:alpha020"
+    tags: [gap, overnight, reversal]
+    notes: "Large gaps in all three dimensions tend to reverse"
+
+  - id: WQ026
+    name: "Alpha#026"
+    source: "WorldQuant 101"
+    category: reversal
+    formula: "-1 * ts_max(ts_corr(ts_rank(volume, 5), ts_rank(high, 5), 5), 3)"
+    description: "Max of rolling rank-correlation between volume and high price"
+    data_requirements: [high, volume]
+    lookback_window: 15
+    compute_fn: "quantsys.factor.library.wq101:alpha026"
+    tags: [volume, high, rank, reversal]
+    notes: "Peak volume-high correlation predicts pullback"
+
+  - id: WQ033
+    name: "Alpha#033"
+    source: "WorldQuant 101"
+    category: reversal
+    formula: "rank(-(1 - (open / close)))"
+    description: "Rank of intraday return — simple open-to-close reversal signal"
+    data_requirements: [open, close]
+    lookback_window: 1
+    compute_fn: "quantsys.factor.library.wq101:alpha033"
+    tags: [intraday, simple, reversal]
+    notes: "Simplest reversal alpha — positive intraday return predicts reversal"
+
+  - id: WQ044
+    name: "Alpha#044"
+    source: "WorldQuant 101"
+    category: reversal
+    formula: "-1 * ts_corr(high, rank(volume), 5)"
+    description: "Negative correlation between high price and volume rank"
+    data_requirements: [high, volume]
+    lookback_window: 7
+    compute_fn: "quantsys.factor.library.wq101:alpha044"
+    tags: [high, volume, correlation, reversal]
+    notes: "High-volume highs predict short-term reversal"
+
+  - id: WQ053
+    name: "Alpha#053"
+    source: "WorldQuant 101"
+    category: reversal
+    formula: "-1 * delta((close - low - (high - close)) / (close - low + eps), 9)"
+    description: "Change in close position within bar range over 9 days"
+    data_requirements: [high, low, close]
+    lookback_window: 11
+    compute_fn: "quantsys.factor.library.wq101:alpha053"
+    tags: [range, delta, reversal]
+    notes: "Shifting of close toward low/high of bar predicts reversal"
+
+  - id: WQ101
+    name: "Alpha#101"
+    source: "WorldQuant 101"
+    category: reversal
+    formula: "(close - open) / (high - low + eps)"
+    description: "Intraday return normalized by bar range"
+    data_requirements: [open, high, low, close]
+    lookback_window: 1
+    compute_fn: "quantsys.factor.library.wq101:alpha101"
+    tags: [intraday, range, simple, reversal]
+    notes: "Measures directional strength within the day's range"

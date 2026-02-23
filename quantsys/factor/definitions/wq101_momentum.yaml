@@ -1,0 +1,85 @@
+# WorldQuant 101 Alphas — Momentum factors
+factors:
+  - id: WQ008
+    name: "Alpha#008"
+    source: "WorldQuant 101"
+    category: momentum
+    formula: "-1 * rank(ts_sum(open, 5) * ts_sum(returns, 5) - delay(ts_sum(open, 5) * ts_sum(returns, 5), 10))"
+    description: "Change in open-weighted cumulative returns — captures short-term momentum shifts"
+    data_requirements: [open, close]
+    lookback_window: 17
+    compute_fn: "quantsys.factor.library.wq101:alpha008"
+    tags: [open, returns, momentum]
+    notes: "Momentum persistence in open-return product"
+
+  - id: WQ009
+    name: "Alpha#009"
+    source: "WorldQuant 101"
+    category: momentum
+    formula: "if ts_min(delta(close,1),5)>0: delta(close,1); elif ts_max(delta(close,1),5)<0: delta(close,1); else -1*delta(close,1)"
+    description: "Conditional momentum — follows trend when consistent, reverses when mixed"
+    data_requirements: [close]
+    lookback_window: 7
+    compute_fn: "quantsys.factor.library.wq101:alpha009"
+    tags: [close, conditional, momentum]
+    notes: "Adaptive signal: momentum in trending markets, reversal in choppy markets"
+
+  - id: WQ012
+    name: "Alpha#012"
+    source: "WorldQuant 101"
+    category: momentum
+    formula: "sign(delta(volume, 1)) * (-1 * delta(close, 1))"
+    description: "Volume-direction interacted with price reversal"
+    data_requirements: [close, volume]
+    lookback_window: 3
+    compute_fn: "quantsys.factor.library.wq101:alpha012"
+    tags: [volume, close, interaction, momentum]
+    notes: "Rising volume with falling price = bullish signal"
+
+  - id: WQ017
+    name: "Alpha#017"
+    source: "WorldQuant 101"
+    category: momentum
+    formula: "-1 * rank(ts_rank(close, 10)) * rank(delta(delta(close, 1), 1)) * rank(ts_rank(volume/adv(volume,20), 5))"
+    description: "Three-way interaction of price rank, price acceleration, and relative volume"
+    data_requirements: [close, volume]
+    lookback_window: 22
+    compute_fn: "quantsys.factor.library.wq101:alpha017"
+    tags: [close, volume, acceleration, momentum]
+    notes: "Complex momentum factor combining price trend, acceleration, and volume surge"
+
+  - id: WQ023
+    name: "Alpha#023"
+    source: "WorldQuant 101"
+    category: momentum
+    formula: "if ts_mean(high, 20) < high: -1 * delta(high, 2) else 0"
+    description: "Conditional short when price breaks above 20-day mean high"
+    data_requirements: [high]
+    lookback_window: 22
+    compute_fn: "quantsys.factor.library.wq101:alpha023"
+    tags: [high, conditional, breakout, momentum]
+    notes: "Breakout reversal — new highs above average trigger short signal"
+
+  - id: WQ035
+    name: "Alpha#035"
+    source: "WorldQuant 101"
+    category: momentum
+    formula: "ts_rank(volume, 32) * (1 - ts_rank(close + high - low, 16)) * (1 - ts_rank(returns, 32))"
+    description: "Volume persistence combined with counter-trend and return reversal"
+    data_requirements: [high, low, close, volume]
+    lookback_window: 34
+    compute_fn: "quantsys.factor.library.wq101:alpha035"
+    tags: [volume, returns, multi-factor, momentum]
+    notes: "Long lookback multi-signal combination"
+
+  - id: WQ041
+    name: "Alpha#041"
+    source: "WorldQuant 101"
+    category: momentum
+    formula: "signedpower(high * low, 0.5) - vwap(amount, volume)"
+    description: "Geometric mean of high-low minus VWAP — momentum divergence"
+    data_requirements: [high, low, volume, amount]
+    lookback_window: 1
+    compute_fn: "quantsys.factor.library.wq101:alpha041"
+    tags: [high, low, vwap, momentum]
+    notes: "Measures deviation of price from volume-weighted average"
