@@ -58,6 +58,13 @@ Event-driven synchronous loop: `BarEvent → SignalEvent → OrderEvent → Fill
 - When `/command` is typed, `Agent.load_skill()` injects the full `SKILL.md` into `ContextManager` as a system message. Any text typed after the command on the same line is forwarded to the LLM immediately.
 - `LLMClient` abstracts Anthropic and OpenAI-compatible APIs; provider selected by `LLM_PROVIDER` in `.env`.
 
+### Factor library (`quantsys/factor/`)
+- `operators.py` — ~30 pandas-based operators (rank, delta, ts_corr, etc.) used to compose factors.
+- `library/wq101.py` — 20 WorldQuant 101 alpha implementations. Each function takes a DataFrame and returns a Series.
+- `definitions/*.yaml` — YAML catalog with factor metadata (name, formula, description, data requirements). Agent reads these for context injection.
+- `registry.py` — Discovers YAML definitions, resolves `compute_fn` to Python callables. Provides `get_summary()` (Level 2) and `get_detail()` (Level 3) for progressive agent context.
+- `engine.py` — Computes factors: `compute(factor_id, df)` for single, `compute_batch(ids, df)` for multiple. BacktestEngine calls this automatically when strategy declares `required_factors`.
+
 ### Settings (`quantsys/config/settings.py`)
 `pydantic-settings` `BaseSettings`, reads from `.env`. `get_settings()` is `@lru_cache`-wrapped. Key vars: `ANTHROPIC_API_KEY`, `LLM_PROVIDER`, `DATABASE_PATH` (default `data/quantsys.db`).
 

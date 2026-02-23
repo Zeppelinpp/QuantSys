@@ -2,7 +2,7 @@
 
 import pytest
 
-from quantsys.factor.registry import FactorMeta, FactorRegistry
+from quantsys.factor.registry import FactorRegistry
 
 
 @pytest.fixture

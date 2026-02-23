@@ -1,9 +1,8 @@
 """Tests for data validator."""
 
 import pandas as pd
-import pytest
 
-from quantsys.data.validator import DataValidator, ValidationError
+from quantsys.data.validator import DataValidator
 
 
 class TestDataValidator:

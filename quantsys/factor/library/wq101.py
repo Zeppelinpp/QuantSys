@@ -10,7 +10,6 @@ import pandas as pd
 
 from quantsys.factor.operators import (
     adv,
-    decay_linear,
     delay,
     delta,
     log_op,

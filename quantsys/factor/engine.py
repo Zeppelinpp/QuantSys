@@ -33,9 +33,7 @@ class FactorEngine:
         fn = self._resolve_fn(meta.compute_fn)
         return fn(df)
 
-    def compute_batch(
-        self, factor_ids: List[str], df: pd.DataFrame
-    ) -> pd.DataFrame:
+    def compute_batch(self, factor_ids: List[str], df: pd.DataFrame) -> pd.DataFrame:
         """Compute multiple factors and merge into a copy of df.
 
         Returns DataFrame with original columns plus factor_{id} columns.
@@ -65,13 +63,13 @@ class FactorEngine:
 
         return True
 
-    def _resolve_fn(self, compute_fn: str) -> Callable:
+    def _resolve_fn(self, compute_fn: str) -> Callable:  # type: ignore[type-arg]
         """Resolve a 'module.path:func_name' string to a callable."""
         if compute_fn in self._fn_cache:
             return self._fn_cache[compute_fn]
 
         module_path, func_name = compute_fn.rsplit(":", 1)
         mod = importlib.import_module(module_path)
-        fn = getattr(mod, func_name)
+        fn: Callable = getattr(mod, func_name)  # type: ignore[type-arg]
         self._fn_cache[compute_fn] = fn
         return fn

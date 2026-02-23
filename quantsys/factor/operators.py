@@ -7,7 +7,6 @@ All operators are pure functions: (pd.Series, ...) -> pd.Series.
 import numpy as np
 import pandas as pd
 
-
 # --- Time-series operators ---
 
 
@@ -79,7 +78,7 @@ def decay_linear(x: pd.Series, d: int) -> pd.Series:
     weights /= weights.sum()
 
     def _weighted_mean(s: np.ndarray) -> float:
-        return np.dot(s, weights)
+        return float(np.dot(s, weights))
 
     return x.rolling(d, min_periods=d).apply(_weighted_mean, raw=True)
 

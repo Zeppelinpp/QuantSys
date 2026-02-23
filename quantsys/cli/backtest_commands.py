@@ -31,6 +31,7 @@ def backtest() -> None:
 @click.option("--cash", default=1_000_000.0, help="Initial cash")
 @click.option("--commission", default=0.0003, help="Commission rate")
 @click.option("--output", "-o", help="Output file for results (JSON)")
+@click.option("--benchmark", "-b", default="000300", help="Benchmark index code (default: 000300 CSI300)")
 def run(
     strategy_file: str,
     start: str,
@@ -39,6 +40,7 @@ def run(
     cash: float,
     commission: float,
     output: str,
+    benchmark: str,
 ) -> None:
     """Run backtest for a strategy."""
     settings = get_settings()
@@ -71,6 +73,7 @@ def run(
         initial_cash=cash,
         database=db,
         execution_config=exec_config,
+        benchmark_symbol=benchmark,
     )
 
     try:
@@ -114,5 +117,17 @@ def _display_results(result) -> None:
     table.add_row("Total Trades", str(m.total_trades))
     table.add_row("Win Rate", f"{m.win_rate:.1%}")
     table.add_row("Profit Factor", f"{m.profit_factor:.2f}")
+
+    if m.benchmark_return is not None:
+        table.add_row("", "")
+        table.add_row("Benchmark Return", f"{m.benchmark_return:.2%}")
+        excess = m.excess_return or 0.0
+        style = "green" if excess >= 0 else "red"
+        sign = "+" if excess >= 0 else ""
+        table.add_row("Excess Return", f"[{style}]{sign}{excess:.2%}[/{style}]")
+        if m.alpha is not None:
+            table.add_row("Alpha", f"{m.alpha:.4f}")
+        if m.beta is not None:
+            table.add_row("Beta", f"{m.beta:.2f}")
 
     console.print(table)

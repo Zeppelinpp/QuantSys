@@ -2,7 +2,6 @@
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from quantsys.backtest.events import BarEvent
 from quantsys.factor.engine import FactorEngine
