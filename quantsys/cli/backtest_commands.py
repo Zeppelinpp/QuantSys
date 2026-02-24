@@ -1,7 +1,6 @@
 """Backtest CLI commands."""
 
 from datetime import datetime
-from pathlib import Path
 
 import click
 from loguru import logger
@@ -31,7 +30,9 @@ def backtest() -> None:
 @click.option("--cash", default=1_000_000.0, help="Initial cash")
 @click.option("--commission", default=0.0003, help="Commission rate")
 @click.option("--output", "-o", help="Output file for results (JSON)")
-@click.option("--benchmark", "-b", default="000300", help="Benchmark index code (default: 000300 CSI300)")
+@click.option(
+    "--benchmark", "-b", default="000300", help="Benchmark index code (default: 000300 CSI300)"
+)
 def run(
     strategy_file: str,
     start: str,

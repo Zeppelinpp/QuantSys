@@ -56,9 +56,8 @@ class SlashCommandCompleter(Completer):
         self.agent = agent
         self.commands = agent.get_available_commands()
 
-    def get_completions(self, document, complete_event):
+    def get_completions(self, document, complete_event):  # noqa: ARG002
         text = document.text
-        word = document.get_word_under_cursor()
 
         # Complete @ file references - no background color
         if "@" in text:
@@ -196,7 +195,6 @@ class ChatInterface:
         """Handle slash commands like /skills, /help, etc."""
         parts = command_line.split()
         command = parts[0].lower()
-        args = parts[1:]
 
         # Built-in commands
         if command == "/skills":
