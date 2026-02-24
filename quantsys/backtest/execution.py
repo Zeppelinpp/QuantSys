@@ -1,7 +1,6 @@
 """Execution handler for backtest engine."""
 
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Dict, List, Optional
 
 from loguru import logger
@@ -76,10 +75,14 @@ class ExecutionHandler:
         # Check limit price for limit orders
         if order.order_type == "LIMIT" and order.limit_price is not None:
             if order.side == "BUY" and execution_price > order.limit_price:
-                logger.debug(f"Limit order not filled: price {execution_price} > limit {order.limit_price}")
+                logger.debug(
+                    f"Limit order not filled: price {execution_price} > limit {order.limit_price}"
+                )
                 return None
             if order.side == "SELL" and execution_price < order.limit_price:
-                logger.debug(f"Limit order not filled: price {execution_price} < limit {order.limit_price}")
+                logger.debug(
+                    f"Limit order not filled: price {execution_price} < limit {order.limit_price}"
+                )
                 return None
 
         # Calculate slippage
@@ -111,7 +114,7 @@ class ExecutionHandler:
 
         logger.debug(
             f"Order filled: {order.side} {order.quantity} {order.symbol} @ {fill_price:.2f} "
-            f"(commission: {commission:.2f}, slippage: {slippage*100:.2f}%)"
+            f"(commission: {commission:.2f}, slippage: {slippage * 100:.2f}%)"
         )
 
         return fill

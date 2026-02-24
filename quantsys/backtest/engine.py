@@ -1,8 +1,8 @@
 """Backtest engine for QuantSys."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Type
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -122,12 +122,14 @@ class BacktestEngine:
             )
 
         # Initialize strategy
-        self.strategy.on_start({
-            "symbols": self.symbols,
-            "start_date": self.start_date,
-            "end_date": self.end_date,
-            "initial_cash": self.initial_cash,
-        })
+        self.strategy.on_start(
+            {
+                "symbols": self.symbols,
+                "start_date": self.start_date,
+                "end_date": self.end_date,
+                "initial_cash": self.initial_cash,
+            }
+        )
 
         # Process each timestamp
         timestamps = sorted(data["timestamp"].unique())
@@ -155,10 +157,12 @@ class BacktestEngine:
             self._process_bar(timestamp)
 
         # Stop strategy
-        self.strategy.on_stop({
-            "portfolio": self.portfolio.get_state(),
-            "trades": len(self.fills),
-        })
+        self.strategy.on_stop(
+            {
+                "portfolio": self.portfolio.get_state(),
+                "trades": len(self.fills),
+            }
+        )
 
         # Load benchmark data if specified
         benchmark_returns = None
@@ -269,10 +273,7 @@ class BacktestEngine:
     def _process_bar(self, timestamp: datetime) -> None:
         """Process a single bar."""
         # Update portfolio with current prices
-        prices = {
-            symbol: bar["close"]
-            for symbol, bar in self.current_bars.items()
-        }
+        prices = {symbol: bar["close"] for symbol, bar in self.current_bars.items()}
         self.portfolio.update_market(timestamp, prices)
 
         # Generate signals for each symbol

@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 import numpy as np
-import pandas as pd
 
 
 @dataclass
@@ -202,9 +201,7 @@ def calculate_metrics(
 
         min_len = min(len(returns), len(benchmark_returns))
         if min_len > 1:
-            alpha, beta = calculate_alpha_beta(
-                returns[-min_len:], benchmark_returns[-min_len:]
-            )
+            alpha, beta = calculate_alpha_beta(returns[-min_len:], benchmark_returns[-min_len:])
 
     return BacktestMetrics(
         total_return=total_return,
