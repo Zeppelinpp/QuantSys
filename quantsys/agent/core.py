@@ -1,7 +1,7 @@
 """Agent core for QuantSys."""
 
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from loguru import logger
 
@@ -113,25 +113,24 @@ walk-forward validation, out-of-sample testing
         Returns:
             Command output
         """
-        parts = command_line.split()
+        parts = command_line.split(None, 1)
         command = parts[0]
-        args = parts[1:]
+        trailing = parts[1].strip() if len(parts) > 1 else ""
 
-        # Find skill for command
         skill = self.skills.get_skill_by_command(command)
         if not skill:
             return f"Unknown command: {command}"
 
-        # Load full skill documentation
         try:
-            skill_doc = self.skills.load_full_skill(skill.name)
+            self.load_skill(skill.name)
         except Exception as e:
             logger.error(f"Failed to load skill {skill.name}: {e}")
             return f"Error loading skill: {e}"
 
-        # For now, return skill info
-        # In full implementation, this would parse args and execute
-        return f"Command: {command}\nSkill: {skill.name}\nDescription: {skill.description}"
+        if trailing:
+            return self.chat(trailing)
+
+        return f"Skill loaded: {skill.name} ({skill.description})"
 
     def load_skill(self, skill_name: str) -> None:
         """Inject a skill's full documentation into the conversation context."""
