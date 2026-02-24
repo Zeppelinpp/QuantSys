@@ -117,19 +117,20 @@ class StrategyOptimizer:
         history = []
         for i in range(len(result.x_iters)):
             params = {name: value for name, value in zip(param_names, result.x_iters[i])}
-            history.append({
-                "iteration": i,
-                "params": params,
-                "score": -result.func_vals[i],
-            })
+            history.append(
+                {
+                    "iteration": i,
+                    "params": params,
+                    "score": -result.func_vals[i],
+                }
+            )
 
         best_params = {name: value for name, value in zip(param_names, result.x)}
 
         duration = (datetime.now() - start_time).total_seconds()
 
         logger.info(
-            f"Optimization complete: best {objective}={-result.fun:.4f}, "
-            f"params={best_params}"
+            f"Optimization complete: best {objective}={-result.fun:.4f}, params={best_params}"
         )
 
         return OptimizationResult(
@@ -141,9 +142,7 @@ class StrategyOptimizer:
             duration_seconds=duration,
         )
 
-    def _convert_param_space(
-        self, param_space: Dict[str, Tuple[str, Any, Any]]
-    ) -> List[Space]:
+    def _convert_param_space(self, param_space: Dict[str, Tuple[str, Any, Any]]) -> List[Space]:
         """Convert parameter space to skopt dimensions."""
         dimensions = []
         for name, (ptype, min_val, max_val) in param_space.items():
@@ -193,3 +192,4 @@ class StrategyOptimizer:
         except Exception as e:
             logger.warning(f"Evaluation failed for params {params}: {e}")
             return None
+
