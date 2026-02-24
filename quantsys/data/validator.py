@@ -1,7 +1,7 @@
 """Data quality validator."""
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import pandas as pd
 from loguru import logger
@@ -232,7 +232,7 @@ class DataValidator:
 
         for i, error in enumerate(self.errors[:max_errors]):
             logger.warning(
-                f"  [{i+1}] Row {error.row_index}, Column '{error.column}': "
+                f"  [{i + 1}] Row {error.row_index}, Column '{error.column}': "
                 f"{error.error_type} - {error.message}"
             )
 

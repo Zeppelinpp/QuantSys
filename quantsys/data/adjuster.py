@@ -1,7 +1,6 @@
 """Adjustment factor calculator for stock splits and dividends."""
 
 from datetime import datetime
-from typing import List, Optional
 
 import akshare as ak
 import pandas as pd
@@ -79,7 +78,9 @@ class Adjuster:
 
         # Calculate factor: adj_factor = close_adj / close_unadj
         # Handle potential division by zero
-        df_merged["adj_factor"] = df_merged["close_adj"] / df_merged["close_unadj"].replace(0, pd.NA)
+        df_merged["adj_factor"] = df_merged["close_adj"] / df_merged["close_unadj"].replace(
+            0, pd.NA
+        )
         df_merged = df_merged.dropna(subset=["adj_factor"])
 
         # Standardize
